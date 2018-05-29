@@ -8,8 +8,8 @@ import (
 	"github.com/travisjeffery/jocko/protocol"
 )
 
-// Proxy is used to proxy requests to a Kafka broker with middleware support to inspect/modify
-// requests and responses.
+// Proxy enables you to proxy requests to a Kafka broker and inspect or modify the requests and
+// responses with middleware.
 type Proxy struct {
 	conn          Conn
 	handlerLock   sync.Mutex

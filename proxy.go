@@ -8,8 +8,8 @@ import (
 	"github.com/travisjeffery/jocko/protocol"
 )
 
-type HandlerFunc func(*jocko.Context)
-
+// Proxy is used to proxy requests to a Kafka broker with middleware support to inspect/modify
+// requests and responses.
 type Proxy struct {
 	conn          Conn
 	handlerLock   sync.Mutex
@@ -18,10 +18,6 @@ type Proxy struct {
 	shutdown      bool
 	shutdownLock  sync.Mutex
 	shutdownCh    chan struct{}
-}
-
-type Conn interface {
-	Fetch(*protocol.FetchRequest) (*protocol.FetchResponses, error)
 }
 
 // New creates a new proxy connected to the broker behind the given conn.
@@ -82,3 +78,11 @@ func (p *Proxy) Shutdown() error {
 	close(p.shutdownCh)
 	return nil
 }
+
+// Conn is used to send requests to a Kafka broker.
+type Conn interface {
+	Fetch(*protocol.FetchRequest) (*protocol.FetchResponses, error)
+}
+
+// Handler is used to handle request/response contexts.
+type HandlerFunc func(*jocko.Context)

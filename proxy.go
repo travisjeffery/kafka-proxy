@@ -13,14 +13,20 @@ import (
 // SizeLen is the number of bytes that make up the size field of the requet.
 const SizeLen = 4
 
+// Endpoint handles a API request and returns a response.
 type Endpoint func(ctx context.Context, request interface{}) (response interface{}, err error)
 
+// Middleware is a chainable behavior modifier for endpoints.
 type Middleware func(Endpoint) Endpoint
 
+// Client represents a Kafka client.
 type Client interface {
 	Run(ctx context.Context, req interface{}) (interface{}, error)
 }
 
+// Proxy is a layer 7/application level proxy for Kafka with pluggable middleware support. You can
+// change client requests before being sent to the broker, or change responses from the broker
+// before being sent to the client.
 type Proxy struct {
 	sync.Mutex
 	err      error
@@ -45,13 +51,14 @@ func New(ipPort string, c Client) *Proxy {
 	}
 }
 
-// with add a new Middleware.
+// With adds a new middleware to handle requests and responses.
 func (p *Proxy) With(me Middleware) {
 	p.Lock()
 	defer p.Unlock()
 	p.endpoint = me(p.endpoint)
 }
 
+// Run starts the listener and request proxy.
 func (p *Proxy) Run(ctx context.Context) (err error) {
 	p.ln, err = p.netListen()("tcp", p.ipPort)
 	if err != nil {
@@ -63,11 +70,15 @@ func (p *Proxy) Run(ctx context.Context) (err error) {
 	return nil
 }
 
+// Wait waits for the Proxy to finish running. Currently this can only happen if a Listener is closed, or Close is already called on the proxy.
+//
+// It is only valid to call Wait after a successful call to Run.
 func (p *Proxy) Wait() error {
 	close(p.donec)
 	return p.err
 }
 
+// Close closes the proxy's listener.
 func (p *Proxy) Close() error {
 	return p.ln.Close()
 }

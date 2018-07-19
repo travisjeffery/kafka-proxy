@@ -4,6 +4,7 @@ package kafkaproxy_test
 
 import (
 	"context"
+	"github.com/travisjeffery/jocko/protocol"
 	"sync"
 )
 
@@ -17,7 +18,7 @@ var (
 //
 //         // make and configure a mocked Client
 //         mockedClient := &MockClient{
-//             RunFunc: func(ctx context.Context,req interface{}) (interface{}, error) {
+//             RunFunc: func(ctx context.Context,req *protocol.Request) (*protocol.Response, error) {
 // 	               panic("TODO: mock out the Run method")
 //             },
 //         }
@@ -28,7 +29,7 @@ var (
 //     }
 type MockClient struct {
 	// RunFunc mocks the Run method.
-	RunFunc func(ctx context.Context, req interface{}) (interface{}, error)
+	RunFunc func(ctx context.Context, req *protocol.Request) (*protocol.Response, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -37,7 +38,7 @@ type MockClient struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Req is the req argument value.
-			Req interface{}
+			Req *protocol.Request
 		}
 	}
 }
@@ -50,13 +51,13 @@ func (mock *MockClient) Reset() {
 }
 
 // Run calls RunFunc.
-func (mock *MockClient) Run(ctx context.Context, req interface{}) (interface{}, error) {
+func (mock *MockClient) Run(ctx context.Context, req *protocol.Request) (*protocol.Response, error) {
 	if mock.RunFunc == nil {
 		panic("moq: MockClient.RunFunc is nil but Client.Run was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
-		Req interface{}
+		Req *protocol.Request
 	}{
 		Ctx: ctx,
 		Req: req,
@@ -79,11 +80,11 @@ func (mock *MockClient) RunCalled() bool {
 //     len(mockedClient.RunCalls())
 func (mock *MockClient) RunCalls() []struct {
 	Ctx context.Context
-	Req interface{}
+	Req *protocol.Request
 } {
 	var calls []struct {
 		Ctx context.Context
-		Req interface{}
+		Req *protocol.Request
 	}
 	lockMockClientRun.RLock()
 	calls = mock.calls.Run

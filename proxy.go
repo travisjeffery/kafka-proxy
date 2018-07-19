@@ -14,14 +14,14 @@ import (
 const SizeLen = 4
 
 // Endpoint handles a API request and returns a response.
-type Endpoint func(ctx context.Context, request interface{}) (response interface{}, err error)
+type Endpoint func(ctx context.Context, request *protocol.Request) (response *protocol.Response, err error)
 
 // Middleware is a chainable behavior modifier for endpoints.
 type Middleware func(Endpoint) Endpoint
 
 // Client represents a Kafka client.
 type Client interface {
-	Run(ctx context.Context, req interface{}) (interface{}, error)
+	Run(ctx context.Context, req *protocol.Request) (*protocol.Response, error)
 }
 
 // Proxy is a layer 7/application level proxy for Kafka with pluggable middleware support. You can
@@ -45,7 +45,7 @@ func New(ipPort string, c Client) *Proxy {
 		ipPort:     ipPort,
 		donec:      make(chan struct{}),
 		ListenFunc: net.Listen,
-		endpoint: func(ctx context.Context, request interface{}) (interface{}, error) {
+		endpoint: func(ctx context.Context, request *protocol.Request) (*protocol.Response, error) {
 			return c.Run(ctx, request)
 		},
 	}
@@ -183,13 +183,17 @@ func (p *Proxy) serveConn(errc chan error, c net.Conn) {
 			return
 		}
 
-		res, err := p.endpoint(ctx, req)
+		res, err := p.endpoint(ctx, &protocol.Request{
+			CorrelationID: header.CorrelationID,
+			ClientID:      header.ClientID,
+			Body:          req.(protocol.Body),
+		})
 		if err != nil {
 			errc <- err
 			return
 		}
 
-		resb, err := protocol.Encode(res.(protocol.Encoder))
+		resb, err := protocol.Encode(res)
 		if err != nil {
 			errc <- err
 			return
